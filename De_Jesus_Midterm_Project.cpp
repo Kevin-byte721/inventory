@@ -1,11 +1,12 @@
 #include <iostream>
-#include <vector>
 #include <iomanip>
-#include <algorithm>
+#include <algorithm> // For std::sort
 
 using namespace std;
 
-class Item { 
+const int MAX_ITEMS = 100; // Define a maximum number of items
+
+class Item {
 private:
     int productID;
     string name;
@@ -14,7 +15,21 @@ private:
     string category;
 
 public:
-    Item(int id, string n, int q, double p, string cat) : productID(id), name(n), quantity(q), price(p), category(cat) {}
+    Item(int id, string n, int q, double p, string cat) {
+        productID = id;
+        name = n;
+        quantity = q;
+        price = p;
+        category = cat;
+    }
+
+    Item() {
+        productID = 0;
+        name = "";
+        quantity = 0;
+        price = 0.0;
+        category = "";
+    }
 
     int getProductID() const { return productID; }
     string getName() const { return name; }
@@ -31,7 +46,12 @@ public:
     }
 };
 
-void addItem(vector<Item>& inventory, int& nextID) {
+void addItem(Item inventory[], int& itemCount, int& nextID) {
+    if (itemCount >= MAX_ITEMS) {
+        cout << "Inventory is full!" << endl;
+        return;
+    }
+
     string name, category;
     int quantity;
     double price;
@@ -49,20 +69,20 @@ void addItem(vector<Item>& inventory, int& nextID) {
     cout << "Enter price: ";
     cin >> price;
 
-    Item newItem(nextID, name, quantity, price, category);
-    inventory.push_back(newItem);
+    inventory[itemCount] = Item(nextID, name, quantity, price, category);
+    itemCount++;
     nextID++;
 
     cout << "Item added successfully!" << endl;
 }
 
-void updateItem(vector<Item>& inventory) {
+void updateItem(Item inventory[], int itemCount) {
     int productID;
     cout << "Enter product ID to update: ";
     cin >> productID;
 
-    for (auto& item : inventory) {
-        if (item.getProductID() == productID) {
+    for (int i = 0; i < itemCount; ++i) {
+        if (inventory[i].getProductID() == productID) {
             cout << "Update quantity or price? (q/p): ";
             char choice;
             cin >> choice;
@@ -71,17 +91,17 @@ void updateItem(vector<Item>& inventory) {
                 int newQuantity;
                 cout << "Enter new quantity: ";
                 cin >> newQuantity;
-                int oldQuantity = item.getQuantity();
-                item.setQuantity(newQuantity);
-                cout << "Quantity of Item " << item.getName() << " is updated from "
+                int oldQuantity = inventory[i].getQuantity();
+                inventory[i].setQuantity(newQuantity);
+                cout << "Quantity of Item " << inventory[i].getName() << " is updated from "
                      << oldQuantity << " to " << newQuantity << endl;
             } else if (choice == 'p') {
                 double newPrice;
                 cout << "Enter new price: ";
                 cin >> newPrice;
-                double oldPrice = item.getPrice();
-                item.setPrice(newPrice);
-                cout << "Price of Item " << item.getName() << " is updated from "
+                double oldPrice = inventory[i].getPrice();
+                inventory[i].setPrice(newPrice);
+                cout << "Price of Item " << inventory[i].getName() << " is updated from "
                      << oldPrice << " to " << newPrice << endl;
             } else {
                 cout << "Invalid choice." << endl;
@@ -92,49 +112,53 @@ void updateItem(vector<Item>& inventory) {
     cout << "Item not found!" << endl;
 }
 
-void removeItem(vector<Item>& inventory) {
+void removeItem(Item inventory[], int& itemCount) {
     int productID;
     cout << "Enter product ID to remove: ";
     cin >> productID;
 
-    for (auto it = inventory.begin(); it != inventory.end(); ++it) {
-        if (it->getProductID() == productID) {
-            cout << "Item " << it->getName() << " has been removed from the inventory" << endl;
-            inventory.erase(it);
+    for (int i = 0; i < itemCount; ++i) {
+        if (inventory[i].getProductID() == productID) {
+            cout << "Item " << inventory[i].getName() << " has been removed from the inventory" << endl;
+
+            for (int j = i; j < itemCount - 1; ++j) {
+                inventory[j] = inventory[j + 1];
+            }
+            itemCount--;
             return;
         }
     }
     cout << "Item not found!" << endl;
 }
 
-void displayAllItems(const vector<Item>& inventory) {
+void displayAllItems(const Item inventory[], int itemCount) {
     cout << setw(10) << "ID" << setw(20) << "Name" << setw(10) << "Quantity"
          << setw(10) << "Price" << setw(20) << "Category" << endl;
     cout << setfill('-') << setw(70) << "-" << setfill(' ') << endl;
 
-    for (const auto& item : inventory) {
-        item.displayItem();
+    for (int i = 0; i < itemCount; ++i) {
+        inventory[i].displayItem();
     }
 }
 
-void searchItem(const vector<Item>& inventory) {
+void searchItem(const Item inventory[], int itemCount) {
     int productID;
     cout << "Enter product ID to search: ";
     cin >> productID;
 
-    for (const auto& item : inventory) {
-        if (item.getProductID() == productID) {
+    for (int i = 0; i < itemCount; ++i) {
+        if (inventory[i].getProductID() == productID) {
             cout << setw(10) << "ID" << setw(20) << "Name" << setw(10) << "Quantity"
                  << setw(10) << "Price" << setw(20) << "Category" << endl;
             cout << setfill('-') << setw(70) << "-" << setfill(' ') << endl;
-            item.displayItem();
+            inventory[i].displayItem();
             return;
         }
     }
     cout << "Item not found!" << endl;
 }
 
-void sortItems(vector<Item>& inventory) {
+void sortItems(Item inventory[], int itemCount) {
     char choice;
     cout << "Sort by quantity or price? (q/p): ";
     cin >> choice;
@@ -145,59 +169,51 @@ void sortItems(vector<Item>& inventory) {
 
     if (choice == 'q') {
         if (order == 'a') {
-            sort(inventory.begin(), inventory.end(), [](const Item& a, const Item& b) {
+            sort(inventory, inventory + itemCount, [](const Item& a, const Item& b) {
                 return a.getQuantity() < b.getQuantity();
             });
         } else if (order == 'd') {
-            sort(inventory.begin(), inventory.end(), [](const Item& a, const Item& b) {
+            sort(inventory, inventory + itemCount, [](const Item& a, const Item& b) {
                 return a.getQuantity() > b.getQuantity();
             });
-        } else {
-            cout << "Invalid order choice." << endl;
-            return;
         }
     } else if (choice == 'p') {
         if (order == 'a') {
-            sort(inventory.begin(), inventory.end(), [](const Item& a, const Item& b) {
+            sort(inventory, inventory + itemCount, [](const Item& a, const Item& b) {
                 return a.getPrice() < b.getPrice();
             });
         } else if (order == 'd') {
-            sort(inventory.begin(), inventory.end(), [](const Item& a, const Item& b) {
+            sort(inventory, inventory + itemCount, [](const Item& a, const Item& b) {
                 return a.getPrice() > b.getPrice();
             });
-        } else {
-            cout << "Invalid order choice." << endl;
-            return;
         }
-    } else {
-        cout << "Invalid sort choice." << endl;
-        return;
     }
 
     cout << setw(10) << "ID" << setw(20) << "Name" << setw(10) << "Quantity"
          << setw(10) << "Price" << endl;
     cout << setfill('-') << setw(60) << "-" << setfill(' ') << endl;
-    for (const auto& item : inventory) {
-        cout << setw(10) << item.getProductID() << setw(20) << item.getName()
-             << setw(10) << item.getQuantity() << setw(10) << fixed << setprecision(2) << item.getPrice() << endl;
+    for (int i = 0; i < itemCount; ++i) {
+        cout << setw(10) << inventory[i].getProductID() << setw(20) << inventory[i].getName()
+             << setw(10) << inventory[i].getQuantity() << setw(10) << fixed << setprecision(2) << inventory[i].getPrice() << endl;
     }
 }
 
-void displayLowStockItems(const vector<Item>& inventory) {
+void displayLowStockItems(const Item inventory[], int itemCount) {
     cout << "Low Stock Items (Quantity <= 5):" << endl;
     cout << setw(10) << "ID" << setw(20) << "Name" << setw(10) << "Quantity"
          << setw(10) << "Price" << setw(20) << "Category" << endl;
     cout << setfill('-') << setw(70) << "-" << setfill(' ') << endl;
 
-    for (const auto& item : inventory) {
-        if (item.getQuantity() <= 5) {
-            item.displayItem();
+    for (int i = 0; i < itemCount; ++i) {
+        if (inventory[i].getQuantity() <= 5) {
+            inventory[i].displayItem();
         }
     }
 }
 
 int main() {
-    vector<Item> inventory;
+    Item inventory[MAX_ITEMS];
+    int itemCount = 0;
     int nextID = 1;
 
     int choice;
@@ -216,25 +232,25 @@ int main() {
 
         switch (choice) {
             case 1:
-                addItem(inventory, nextID);
+                addItem(inventory, itemCount, nextID);
                 break;
             case 2:
-                updateItem(inventory);
+                updateItem(inventory, itemCount);
                 break;
             case 3:
-                removeItem(inventory);
+                removeItem(inventory, itemCount);
                 break;
             case 4:
-                displayAllItems(inventory);
+                displayAllItems(inventory, itemCount);
                 break;
             case 5:
-                searchItem(inventory);
+                searchItem(inventory, itemCount);
                 break;
             case 6:
-                sortItems(inventory);
+                sortItems(inventory, itemCount);
                 break;
             case 7:
-                displayLowStockItems(inventory);
+                displayLowStockItems(inventory, itemCount);
                 break;
             case 8:
                 cout << "Exiting..." << endl;

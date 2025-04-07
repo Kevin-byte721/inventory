@@ -29,7 +29,7 @@ public:
         quantity = 0;
         price = 0.0;
         category = "";
-    } 
+    }
 
     int getProductID() const { return productID; }
     string getName() const { return name; }
